@@ -9,6 +9,7 @@ lint:
 .PHONY: setup
 setup:
 	poetry install
+	poetry run pip install librosa
 
 .PHONY: run
 run:

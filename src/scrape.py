@@ -4,10 +4,13 @@ import os
 import time
 import urllib
 
+import librosa
 import pandas as pd
 import requests
+import soundfile as sf
 from bs4 import BeautifulSoup
 from omegaconf import OmegaConf
+from pydub import AudioSegment
 from requests.exceptions import Timeout
 
 
@@ -23,6 +26,7 @@ class Scraper:
 
     def run(self):
         self.all_get()
+        self.preprocess()
 
     def setup(self):
         try:
@@ -90,6 +94,28 @@ class Scraper:
         except Timeout:
             print(f"Time Out: {now_url}")
 
+    def preprocess(self):
+        for i in range(len(self.df)):
+            song = AudioSegment.from_mp3(
+                os.path.join(self.config.path_data, self.df.iloc[i]["filename"])
+            )
+            song.export(
+                os.path.join(
+                    self.config.path_data,
+                    self.df.iloc[i]["filename"].replace(".mp3", ".wav"),
+                ),
+                format="wav",
+            )
+
+        for i in range(len(self.df)):
+            file = os.path.join(
+                self.config.path_data,
+                self.df.iloc[i]["filename"].replace(".mp3", ".wav"),
+            )
+            y, sr = librosa.core.load(file, sr=self.config.sample_rate, mono=True)
+            dir, name = os.path.split(file)
+            sf.write(os.path.join(dir, "new_" + name), y, sr, subtype="PCM_16")
+
 
 def argparser():
     parser = argparse.ArgumentParser()
@@ -104,11 +130,7 @@ def argparser():
     return args
 
 
-def main(args):
-    scraper = Scraper(args.config)
-    scraper.run()
-
-
 if __name__ == "__main__":
     args = argparser()
-    main(args)
+    scraper = Scraper(args.config)
+    scraper.run()

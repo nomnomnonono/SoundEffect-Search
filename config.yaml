@@ -1,2 +1,5 @@
 path_data: data
 path_csv: result.csv
+path_text_embedding: text.pt
+path_audio_embedding: audio.pt
+sample_rate: 16000
