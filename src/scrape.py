@@ -17,7 +17,7 @@ from requests.exceptions import Timeout
 class Scraper:
     def __init__(self, config):
         self.base_url = "https://soundeffect-lab.info/"
-        self.df = pd.DataFrame([], columns=["filename", "category", "url"])
+        self.df = pd.DataFrame([], columns=["filename", "title", "category", "url"])
         self.idx = 0
         self.config = OmegaConf.load(config)
         self.setup()
@@ -65,10 +65,12 @@ class Scraper:
                     continue
                 try:
                     urllib.request.urlretrieve(now_url + url, filename)
+                    title = name.replace(".mp3", "")
                     self.df.loc[self.idx] = {
-                        "filename": name,
+                        "filename": filename,
+                        "title": title,
                         "category": category,
-                        "url": now_url + url,
+                        "url": f"https://soundeffect-lab.info/sound/search.php?s={title}",
                     }
                     self.idx += 1
                     time.sleep(2)
