@@ -1,0 +1,4 @@
+*.ipynb
+data/
+*.mp3
+.vemv/
