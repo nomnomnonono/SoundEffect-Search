@@ -1,5 +1,7 @@
+import librosa
 import numpy as np
 import pandas as pd
+import soundfile as sf
 import torch
 from omegaconf import OmegaConf
 from pydub import AudioSegment
@@ -14,7 +16,7 @@ from transformers import (
 class Search:
     def __init__(self, config):
         self.config = OmegaConf.load(config)
-        self.df = pd.read_csv(config.path_csv)
+        self.df = pd.read_csv(self.config.path_csv)[["title", "url"]]
         self.audio_feature_extractor = AutoFeatureExtractor.from_pretrained(
             "anton-l/wav2vec2-base-superb-sv"
         )
@@ -46,13 +48,12 @@ class Search:
             result = self.similarity(audio_embed, self.audio_reference)
         else:
             raise ValueError("Input text or upload audio file.")
-
-        rank = np.argsort(result.numpy())[::-1][0:topk]
+        rank = np.argsort(result.numpy())[::-1][0 : int(topk)]
         return self.df.iloc[rank]
 
     def get_embedding(self, text, audio):
         text_embed = None if text == "" else self._get_text_embedding(text)
-        audio_embed = None if audio == "" else self._get_audio_embedding(audio)
+        audio_embed = None if audio is None else self._get_audio_embedding(audio)
         return text_embed, audio_embed
 
     def _get_text_embedding(self, text):
@@ -65,6 +66,7 @@ class Search:
         return embedding
 
     def _get_audio_embedding(self, audio):
+        audio = self.preprocess_audio(audio)
         song = AudioSegment.from_wav(audio)
         song = np.array(song.get_array_of_samples(), dtype="float")
         inputs = self.audio_feature_extractor(
@@ -76,3 +78,11 @@ class Search:
         with torch.no_grad():
             embedding = self.audio_model(**inputs).embeddings
         return embedding
+
+    def preprocess_audio(self, audio):
+        sample_rate, data = audio
+        audio = "tmp.wav"
+        sf.write(file=audio, data=data, samplerate=sample_rate)
+        y, sr = librosa.core.load(audio, sr=self.config.sample_rate, mono=True)
+        sf.write(audio, y, sr, subtype="PCM_16")
+        return audio
