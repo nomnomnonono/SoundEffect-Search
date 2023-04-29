@@ -64,7 +64,7 @@ class Scraper:
                     self.df.loc[self.idx] = {
                         "filename": name,
                         "category": category,
-                        "url": url,
+                        "url": now_url + url,
                     }
                     self.idx += 1
                     time.sleep(2)
